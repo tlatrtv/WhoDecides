@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Who Decides — Turnout vs Youth Representation Ratio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Big+Shoulders+Display:wght@700;800;900&family=Open+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root{
+    --blue:#0759e7;
+    --blue2:#0b66ef;
+    --navy:#071a3d;
+    --paper:#f8f3e9;
+    --yellow:#ffd31f;
+    --orange:#ff6c2f;
+    --pink:#ef5ba1;
+    --green:#69b84f;
+    --lav:#aeb3ff;
+    --white:#fffdf8;
+    --ink:#071a3d;
+  }
+  *{box-sizing:border-box}
+  html,body{
+    margin:0;
+    min-height:100%;
+    font-family:'Open Sans',sans-serif;
+    color:var(--ink);
+    background:var(--blue);
+  }
+  body{
+    background:
+      radial-gradient(circle at 8% 12%,rgba(255,255,255,.07),transparent 22%),
+      linear-gradient(180deg,var(--blue2),var(--blue));
+  }
+  .wrap{
+    width:min(1500px,calc(100% - 48px));
+    margin:auto;
+    padding:28px 0 34px;
+  }
+  .card{
+    background:var(--paper);
+    border:2px solid var(--navy);
+    border-radius:12px;
+    padding:24px 24px 14px;
+    box-shadow:0 8px 0 rgba(7,26,61,.26);
+    overflow:hidden;
+  }
+  h1{
+    margin:0 0 8px;
+    font-family:'Big Shoulders Display',sans-serif;
+    font-size:clamp(34px,4vw,52px);
+    font-weight:900;
+    line-height:.95;
+    letter-spacing:-.02em;
+    text-transform:uppercase;
+    color:var(--navy);
+  }
+  .dek{
+    margin:0 0 12px;
+    color:var(--navy);
+    font-size:13px;
+    line-height:1.5;
+    font-weight:700;
+    max-width:860px;
+  }
+  .chart-key{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+    margin:0 0 8px;
+    font-size:10px;
+    line-height:1.25;
+    font-weight:800;
+    color:rgba(7,26,61,.78);
+  }
+  .key-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .key-dot{
+    width:11px;
+    height:11px;
+    border-radius:50%;
+    background:var(--pink);
+    border:1.5px solid var(--navy);
+  }
+  .key-ring{
+    width:13px;
+    height:13px;
+    border-radius:50%;
+    background:transparent;
+    border:2px solid var(--navy);
+  }
+  .key-line{
+    width:22px;
+    height:0;
+    border-top:2px dashed var(--navy);
+    opacity:.75;
+  }
+  .key-size-sm,.key-size-md,.key-size-lg{
+    display:inline-block;
+    border-radius:50%;
+    background:rgba(7,26,61,.55);
+    border:1px solid var(--navy);
+  }
+  .key-size-sm{width:7px;height:7px}
+  .key-size-md{width:11px;height:11px;margin-left:-1px}
+  .key-size-lg{width:15px;height:15px;margin-left:-1px}
+  #chart{
+    width:100%;
+    height:720px;
+    background:var(--paper);
+  }
+  .note{
+    color:var(--navy);
+    font-size:10px;
+    font-weight:700;
+    line-height:1.45;
+    margin:8px 6px 2px;
+  }
+  @media(max-width:700px){
+    .wrap{width:100%;padding:0}
+    .card{
+      border-left:0;
+      border-right:0;
+      border-radius:0;
+      padding:18px 10px 10px;
+      box-shadow:none;
+    }
+    h1{font-size:32px;padding:0 8px}
+    .dek,.note{padding:0 8px}
+    #chart{height:650px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Does higher overall turnout translate into stronger youth representation?</h1>
+    <p class="dek">
+      Each point is a city. Overall mayoral turnout is plotted against the Youth Representation Ratio (YRR), with color showing ACP community type and point size reflecting eligible voter population.
+      Among non-College Town cities, YRR rises step for step with overall turnout, suggesting youth turnout is the most elastic part of the electorate: the first to expand when engagement rises, and the first to contract when it doesn't.
+    </p>
+    <div class="chart-key">
+      <span class="key-item"><span class="key-ring"></span>Age-match rate below 50%</span>
+      <span class="key-item"><span class="key-line"></span>Non-College Town linear fit</span>
+      <span class="key-item"><span class="key-size-sm"></span><span class="key-size-md"></span><span class="key-size-lg"></span>Point size = eligible voter population</span>
+      <span class="key-item">YRR 1.0 = youth voters match their eligible-voter share</span>
+    </div>
+    <div id="chart"></div>
+    <p class="note">
+      Source: Who Decides master dataset. Hover for city details and reliability context.
+    </p>
+  </div>
+</div>
+
+<script>
+const grouped = {"College Towns": {"x": [49.2, 44.0, 46.0, 35.9, 42.3, 38.3, 21.6, 18.4, 11.9, 29.1, 12.7, 22.4, 29.0, 9.7, 19.2, 16.1, 14.8, 19.0, 12.8, 23.6, 18.6, 57.8, 44.0, 22.0, 29.9, 14.6, 36.0, 53.9, 18.0, 23.3, 38.9, 37.5, 58.9, 34.6, 19.0, 23.7, 14.6, 13.1, 18.3, 19.7, 51.7, 18.5, 14.9, 20.8, 10.7, 24.2, 63.9, 33.5, 6.5, 17.3, 48.5, 31.7, 63.6, 24.0, 26.7, 14.6, 47.6, 20.2, 20.0, 57.6, 40.2, 38.2, 41.4, 43.5, 51.7], "y": [0.14, 0.58, 0.8, 0.09, 0.12, 0.41, 0.12, 0.07, 0.05, 0.12, 0.08, 0.1, 0.14, 0.16, 0.27, 0.16, 0.25, 0.22, 0.41, 0.3, 0.29, 0.24, 0.25, 0.04, 0.04, 0.22, 0.25, 0.17, 0.06, 0.09, 0.11, 0.12, 0.14, 0.28, 0.25, 0.29, 0.32, 0.19, 0.29, 0.26, 0.21, 0.1, 0.05, 0.12, 0.06, 0.08, 0.21, 0.57, 0.15, 0.21, 0.19, 0.1, 0.26, 0.16, 0.5, 0.35, 0.54, 0.34, 0.14, 0.77, 0.37, 0.37, 0.5, 0.23, 0.37], "city": ["Flagstaff, AZ", "Fayetteville, AR", "Springdale, AR", "Boulder, CO", "Longmont, CO", "Tallahassee, FL", "Athens, GA", "Savannah, GA", "Valdosta, GA", "Bloomington, IL", "Champaign, IL", "Peoria, IL", "Springfield, IL", "Bloomington, IN", "Evansville, IN", "Muncie, IN", "South Bend, IN", "Terre Haute, IN", "Coralville, IA", "Waterloo, IA", "Topeka, KS", "Frankfort, KY", "Lexington, KY", "Kenner, LA", "Lafayette, LA", "Chicopee, MA", "Northampton, MA", "Ann Arbor, MI", "Kalamazoo, MI", "Lansing, MI", "Duluth, MN", "Mankato, MN", "Saint Cloud, MN", "Lincoln, NE", "Albany, NY", "Binghamton, NY", "Rochester, NY", "Schenectady, NY", "Syracuse, NY", "Troy, NY", "Asheville, NC", "Burlington, NC", "Chapel Hill, NC", "Durham, NC", "Greenville, NC", "Wilmington, NC", "Winston-Salem, NC", "Akron, OH", "Moore, OK", "Norman, OK", "Corvallis, OR", "Eugene, OR", "Medford, OR", "Springfield, OR", "Harrisburg, PA", "State College, PA", "Johnson City, TN", "College Station, TX", "Burlington, VT", "Roanoke, VA", "Bellingham, WA", "Spokane, WA", "Huntington, WV", "La Crosse, WI", "Madison, WI"], "cvap": [60782, 77563, 45968, 88177, 76228, 161215, 98318, 111999, 41717, 56536, 65896, 79642, 87427, 65311, 88446, 53183, 71308, 45622, 17085, 47518, 93493, 21021, 234840, 43786, 91612, 42769, 24846, 94403, 56075, 83112, 70640, 36345, 51476, 218637, 79689, 36643, 157625, 51667, 108165, 40268, 77224, 40777, 47833, 208452, 73094, 97403, 177450, 142494, 45561, 102825, 46925, 145110, 63626, 46575, 33635, 35203, 57366, 94046, 38602, 71559, 77334, 177840, 37397, 43462, 215281], "age_unknown": [43.62, 0.01, 0.01, 30.76, 27.47, 0.2, 26.21, 27.1, 25.73, 5.36, 5.15, 5.58, 2.96, 0.03, 0.01, 0.01, 0.03, 0.03, 0.0, 0.0, 0.0, 16.35, 11.67, 93.28, 91.89, 0.03, 0.0, 31.73, 23.32, 24.31, 16.77, 21.2, 32.0, 0.95, 0.0, 0.0, 0.0, 0.0, 0.01, 0.01, 20.79, 15.78, 22.27, 20.07, 16.51, 16.9, 28.4, 0.03, 0.1, 0.0, 12.74, 8.41, 13.9, 7.37, 0.01, 0.0, 0.03, 0.36, 41.72, 0.04, 1.08, 0.58, 0.02, 21.5, 16.36]}, "Big Cities": {"x": [12.4, 23.4, 18.0, 59.2, 49.4, 54.9, 73.4, 24.6, 55.8, 24.2, 62.7, 66.3, 58.8, 36.2, 15.2, 65.4, 67.0, 39.6, 62.5, 33.6, 63.4, 51.4, 31.1, 33.5, 9.1, 74.8, 36.9, 36.7, 24.7, 29.5, 68.1, 36.5, 77.3, 17.5, 53.3, 60.7, 65.8, 41.2, 40.9, 69.6, 65.2, 36.5, 11.9, 26.4, 39.7, 26.4, 13.5, 26.2, 13.6, 28.2, 16.1, 26.6, 33.9, 28.0, 26.9, 8.7, 30.0, 32.9, 28.0, 23.0, 21.4, 28.4, 52.3, 19.0, 36.7, 20.3, 24.6, 31.9, 18.3, 47.0, 43.1, 66.6, 19.6, 30.0, 27.9, 10.6, 26.8, 23.9, 61.2, 34.6, 29.8, 38.5, 17.2, 20.8, 26.6, 65.1, 15.8, 36.7, 36.5, 34.4, 53.6, 49.9, 52.2, 13.1, 7.8, 47.7, 66.5, 27.4, 2.8, 53.9, 35.8, 6.3, 13.0, 5.8, 5.3, 4.7, 13.2, 10.5, 13.2, 26.7, 25.9, 26.8, 21.0, 47.8, 21.4, 35.2], "y": [0.12, 0.16, 0.1, 0.24, 0.26, 0.25, 0.29, 0.12, 0.65, 0.65, 0.59, 0.66, 0.89, 0.56, 0.55, 0.93, 0.7, 0.54, 0.95, 0.5, 0.8, 0.72, 0.62, 0.51, 0.34, 0.91, 0.52, 0.59, 0.44, 0.4, 0.66, 0.5, 1.13, 0.45, 0.76, 0.7, 0.98, 0.57, 0.55, 0.93, 0.89, 0.53, 0.33, 0.16, 0.29, 0.19, 0.28, 0.27, 0.27, 0.35, 0.34, 0.14, 0.22, 0.12, 0.15, 0.14, 0.3, 0.07, 0.16, 0.29, 0.28, 0.25, 0.79, 0.38, 0.15, 0.11, 0.1, 0.14, 0.08, 0.25, 0.17, 0.33, 0.19, 0.13, 0.37, 0.23, 0.26, 0.36, 0.81, 0.56, 0.12, 0.82, 0.11, 0.11, 0.15, 0.23, 0.32, 0.33, 0.67, 0.48, 0.75, 0.73, 0.55, 0.21, 0.26, 0.59, 0.31, 0.46, 0.33, 0.87, 0.7, 0.17, 0.19, 0.21, 0.23, 0.21, 0.18, 0.2, 0.29, 0.31, 0.33, 0.5, 0.38, 0.4, 0.23, 0.29], "city": ["Avondale, AZ", "Gilbert, AZ", "Glendale, AZ", "Mesa, AZ", "Peoria, AZ", "Phoenix, AZ", "Scottsdale, AZ", "Surprise, AZ", "Alameda, CA", "Baldwin Park, CA", "Berkeley, CA", "Carlsbad, CA", "Carson, CA", "Chula Vista, CA", "Compton, CA", "Elk Grove, CA", "Encinitas, CA", "Escondido, CA", "Fremont, CA", "Gardena, CA", "Gilroy, CA", "Hawthorne, CA", "Hayward, CA", "Inglewood, CA", "Lancaster, CA", "Livermore, CA", "Long Beach, CA", "Los Angeles, CA", "National City, CA", "Oakland, CA", "Oceanside, CA", "Pasadena, CA", "Pleasanton, CA", "Pomona, CA", "Sacramento, CA", "San Diego, CA", "San Francisco, CA", "San Jose, CA", "Santa Clara, CA", "Santee, CA", "Sunnyvale, CA", "Torrance, CA", "Whittier, CA", "Denver, CO", "Washington, DC", "Coral Gables, FL", "Hialeah, FL", "Jacksonville, FL", "Miami, FL", "Miami Beach, FL", "North Miami, FL", "Atlanta, GA", "Johns Creek, GA", "Roswell, GA", "Arlington Heights, IL", "Berwyn, IL", "Chicago, IL", "Evanston, IL", "Skokie, IL", "Indianapolis, IN", "Wichita, KS", "Louisville, KY", "Baltimore, MD", "Boston, MA", "Dearborn, MI", "Dearborn Heights, MI", "Detroit, MI", "Livonia, MI", "Westland, MI", "Brooklyn Park, MN", "Minneapolis, MN", "Plymouth, MN", "Saint Louis Park, MN", "St. Paul, MN", "Blue Springs, MO", "Kansas City, MO", "Omaha, NE", "Henderson, NV", "Las Vegas, NV", "North Las Vegas, NV", "Albuquerque, NM", "New York City, NY", "Apex, NC", "Charlotte, NC", "Huntersville, NC", "Raleigh, NC", "Cleveland, OH", "Cleveland Heights, OH", "Columbus, OH", "Euclid, OH", "Grove City, OH", "Lakewood, OH", "Strongsville, OH", "Edmond, OK", "Oklahoma City, OK", "Tulsa, OK", "Portland, OR", "Philadelphia, PA", "Nashville, TN", "Austin, TX", "Baytown, TX", "Dallas, TX", "Desoto, TX", "Fort Worth, TX", "Garland, TX", "Grand Prairie, TX", "Houston, TX", "Richardson, TX", "San Antonio, TX", "Federal Way, WA", "Kent, WA", "Redmond, WA", "Renton, WA", "Seattle, WA", "Milwaukee, WI", "Wauwatosa, WI"], "cvap": [59045, 192537, 168683, 364123, 144196, 1079445, 200148, 116042, 54392, 42835, 91628, 82701, 65721, 180820, 50180, 123744, 45966, 94913, 129357, 38177, 36029, 50472, 99166, 69018, 113119, 58456, 312342, 2474305, 37077, 300395, 121754, 98421, 47579, 90175, 370624, 997704, 616394, 614767, 72655, 43601, 80167, 97710, 61578, 537959, 506635, 35796, 123657, 712318, 261371, 51626, 33843, 398132, 50955, 62624, 53206, 36263, 1906394, 56180, 45662, 601023, 280816, 456764, 428736, 486892, 69660, 42895, 458740, 74536, 64007, 54183, 323617, 56028, 39531, 218010, 42674, 375807, 339733, 249113, 447157, 180013, 419328, 5589291, 43580, 607786, 45624, 351771, 278747, 33175, 649950, 37591, 31822, 41269, 35991, 69882, 477783, 282608, 506051, 1142301, 492207, 703264, 52438, 803337, 42497, 614259, 141472, 121877, 1379138, 82875, 1012520, 62207, 83523, 41231, 71447, 571618, 388890, 37127], "age_unknown": [31.63, 25.1, 30.46, 37.92, 28.0, 40.14, 34.18, 21.76, 0.05, 0.05, 0.08, 0.04, 0.03, 0.08, 0.05, 0.06, 0.03, 0.07, 0.18, 0.0, 0.05, 0.05, 0.08, 0.05, 0.03, 0.05, 0.03, 0.04, 0.04, 0.02, 0.05, 0.02, 0.1, 0.05, 0.07, 0.06, 0.03, 0.06, 0.03, 0.04, 0.07, 0.04, 0.0, 27.59, 19.7, 0.02, 0.02, 0.08, 0.01, 0.01, 0.0, 33.52, 24.81, 20.7, 4.65, 6.72, 9.49, 6.46, 9.82, 0.03, 0.02, 9.27, 0.35, 0.03, 35.34, 25.34, 31.42, 11.81, 18.85, 21.47, 31.64, 17.23, 16.56, 22.77, 1.59, 0.8, 2.2, 0.09, 0.04, 0.24, 32.17, 0.0, 12.55, 18.33, 15.96, 31.26, 0.0, 0.0, 0.03, 0.02, 0.02, 0.0, 0.02, 0.01, 0.0, 0.01, 16.01, 0.04, 0.0, 0.01, 0.0, 0.08, 0.02, 0.01, 0.0, 0.0, 0.05, 0.0, 0.0, 3.56, 4.21, 1.34, 0.67, 5.55, 10.54, 7.7]}, "Urban Burbs": {"x": [35.4, 33.5, 54.4, 61.7, 55.7, 57.0, 61.5, 53.2, 60.9, 37.9, 70.7, 69.6, 45.6, 46.1, 51.5, 41.2, 30.0, 48.5, 48.7, 49.2, 11.0, 22.7, 15.8, 9.8, 41.9, 16.1, 31.5, 27.0, 15.6, 19.9, 51.9, 8.0, 64.4, 68.8, 60.1, 55.6, 3.5, 11.3, 10.8, 19.4, 10.2, 16.8, 30.0, 24.2, 16.7, 26.3, 15.2, 25.0, 29.6, 25.0, 19.5, 31.4, 21.6, 22.8, 12.7, 30.3, 34.2, 24.4, 31.1, 23.0, 14.6, 17.4, 65.9, 19.4, 31.8, 21.5, 60.8, 24.7, 35.3, 46.2, 26.5, 20.2, 11.6, 25.6, 17.7, 35.5, 20.9, 23.3, 31.3, 17.9, 16.5, 14.1, 15.0, 28.6, 16.1, 15.8, 27.5, 42.6, 28.7, 34.8, 25.8, 43.6, 6.5, 8.5, 45.4, 38.9, 68.0, 72.5, 67.0, 47.4, 27.7, 24.7, 29.8, 24.1], "y": [0.72, 0.55, 0.79, 0.74, 0.84, 0.65, 0.7, 0.8, 0.66, 0.48, 0.65, 1.04, 0.8, 0.34, 0.6, 0.63, 0.14, 0.14, 0.13, 0.14, 0.2, 0.24, 0.25, 0.2, 0.31, 0.21, 0.28, 0.23, 0.26, 0.15, 0.28, 0.13, 0.77, 0.81, 0.7, 0.67, 0.29, 0.26, 0.21, 0.25, 0.16, 0.28, 0.12, 0.1, 0.14, 0.22, 0.15, 0.13, 0.13, 0.34, 0.33, 0.25, 0.29, 0.41, 0.3, 0.35, 0.3, 0.42, 0.53, 0.24, 0.28, 0.28, 0.24, 0.08, 0.1, 0.11, 0.26, 0.6, 0.65, 0.77, 0.37, 0.47, 0.31, 0.48, 0.38, 0.08, 0.34, 0.32, 0.39, 0.35, 0.1, 0.07, 0.07, 0.39, 0.27, 0.26, 0.19, 0.29, 0.46, 0.54, 0.4, 0.66, 0.37, 0.33, 0.52, 0.84, 0.9, 0.86, 0.75, 0.41, 0.28, 0.37, 0.29, 0.32], "city": ["Bentonville, AR", "Anaheim, CA", "Antioch, CA", "Costa Mesa, CA", "Garden Grove, CA", "Irvine, CA", "Orange, CA", "Oxnard, CA", "Petaluma, CA", "Richmond, CA", "San Rafael, CA", "San Ramon, CA", "Santa Ana, CA", "Santa Cruz, CA", "Simi Valley, CA", "Westminster, CA", "Aurora, CO", "Broomfield, CO", "Centennial, CO", "Littleton, CO", "Bridgeport, CT", "Danbury, CT", "East Hartford, CT", "Hartford, CT", "Milford, CT", "New Haven, CT", "Norwalk, CT", "Stamford, CT", "Waterbury, CT", "West Haven, CT", "Wilmington, DE", "Boca Raton, FL", "Coral Springs, FL", "Fort Lauderdale, FL", "Hollywood, FL", "Lauderhill, FL", "Miramar, FL", "Ocoee, FL", "Orlando, FL", "St Petersburg, FL", "Tampa, FL", "Wellington, FL", "Marietta, GA", "Honolulu, HI", "Aurora, IL", "Downers Grove, IL", "Joliet, IL", "Naperville, IL", "Wheaton, IL", "Ankeny, IA", "Des Moines, IA", "Beverly, MA", "Framingham, MA", "Lawrence, MA", "Lynn, MA", "Medford, MA", "Newton, MA", "Quincy, MA", "Somerville, MA", "Waltham, MA", "Woburn, MA", "Worcester, MA", "Grand Rapids, MI", "Pontiac, MI", "Rochester Hills, MI", "Troy, MI", "Lakeville, MN", "Camden, NJ", "East Orange, NJ", "Elizabeth, NJ", "Hoboken, NJ", "Jersey City, NJ", "Newark, NJ", "Paterson, NJ", "Trenton, NJ", "Santa Fe, NM", "Buffalo, NY", "New Rochelle, NY", "White Plains, NY", "Yonkers, NY", "Concord, NC", "Greensboro, NC", "High Point, NC", "Cincinnati, OH", "Dayton, OH", "Toledo, OH", "Beaverton, OR", "Hillsboro, OR", "Bethlehem, PA", "Pittsburgh, PA", "Providence, RI", "Woonsocket, RI", "Frisco, TX", "Kyle, TX", "Missouri City, TX", "San Marcos, TX", "Alexandria, VA", "Leesburg, VA", "Vienna, VA", "Edmonds, WA", "Everett, WA", "Marysville, WA", "Tacoma, WA", "Vancouver, WA"], "cvap": [36430, 212191, 78826, 76800, 109471, 194650, 98755, 112911, 44874, 72016, 38930, 53843, 170721, 51038, 93443, 59747, 254965, 57261, 81172, 35182, 92614, 54547, 36430, 79640, 41034, 92669, 62068, 92420, 78535, 38997, 53607, 76703, 88599, 131421, 101343, 48283, 92266, 32250, 209388, 212807, 290861, 42539, 42049, 252345, 109853, 37516, 101053, 100384, 39787, 51003, 148945, 33320, 43401, 47061, 60852, 45855, 64288, 73341, 62437, 47469, 30760, 144211, 144275, 43135, 53857, 60232, 51003, 44702, 47420, 65312, 45256, 175742, 171454, 81526, 49070, 67142, 203591, 57639, 42021, 144233, 72130, 218494, 82325, 234896, 103467, 201996, 68810, 73564, 60611, 244693, 123506, 30455, 134507, 39307, 55368, 57656, 111276, 32459, 11455, 33641, 77549, 52103, 167704, 143911], "age_unknown": [0.04, 0.06, 0.1, 0.04, 0.09, 0.08, 0.04, 0.18, 0.03, 0.04, 0.08, 0.16, 0.14, 0.12, 0.04, 0.07, 27.73, 25.89, 31.4, 28.82, 4.75, 5.77, 3.76, 3.22, 3.27, 7.65, 4.91, 5.78, 2.43, 3.89, 26.03, 0.03, 0.05, 0.14, 0.02, 0.03, 0.12, 0.05, 0.04, 0.08, 0.06, 0.01, 26.01, 46.58, 7.63, 3.9, 3.6, 6.41, 4.82, 0.02, 0.02, 0.06, 0.03, 0.09, 0.01, 0.01, 0.03, 0.21, 0.03, 0.14, 0.0, 0.04, 36.09, 29.04, 12.69, 13.25, 15.12, 0.01, 0.19, 0.05, 0.0, 0.01, 0.31, 0.19, 0.21, 33.71, 0.0, 0.04, 0.0, 0.0, 17.34, 10.49, 13.32, 0.0, 0.01, 0.0, 8.32, 16.9, 0.0, 0.01, 0.28, 0.02, 0.23, 0.06, 0.14, 0.01, 0.02, 0.02, 0.0, 0.4, 3.51, 0.62, 3.57, 0.05]}, "Exurbs": {"x": [12.8, 68.5, 56.4, 34.9, 50.0, 46.2, 61.9, 40.2, 28.0, 36.4, 46.8, 32.1, 37.1, 24.9, 41.5, 28.7, 10.3, 10.7, 24.5, 26.0, 29.1, 33.3, 39.1, 35.6, 19.0, 19.4, 12.5, 19.2, 51.3, 50.9, 62.1, 31.6, 38.3, 46.7, 47.2, 19.4, 18.5, 21.8, 14.0, 55.9, 61.0, 26.5, 23.6, 1.4, 62.7, 33.7, 50.6, 36.3], "y": [0.08, 0.71, 0.45, 0.28, 0.64, 0.19, 0.3, 0.1, 0.09, 0.15, 0.11, 0.14, 0.14, 0.19, 0.36, 0.35, 0.27, 0.27, 0.35, 0.33, 0.35, 0.25, 0.22, 0.12, 0.33, 0.33, 0.24, 0.29, 0.25, 0.25, 0.25, 0.27, 0.28, 0.59, 0.58, 0.09, 0.11, 0.11, 0.07, 0.37, 0.28, 0.55, 0.1, 0.24, 0.38, 0.16, 0.23, 0.16], "city": ["Maricopa, AZ", "Napa, CA", "San Luis Obispo, CA", "Santa Barbara, CA", "Santa Maria, CA", "Arvada, CO", "Castle Rock, CO", "Fort Collins, CO", "Greeley, CO", "Lakewood, CO", "Loveland, CO", "Thornton, CO", "Westminster, CO", "Middletown, CT", "Carmel, IN", "Fishers, IN", "Greenwood, IN", "Noblesville, IN", "Olathe, KS", "Overland Park, KS", "Shawnee, KS", "Florence, KY", "Portland, ME", "Westbrook, ME", "Attleboro, MA", "Brockton, MA", "New Bedford, MA", "Taunton, MA", "Coon Rapids, MN", "Rochester, MN", "Woodbury, MN", "Billings, MT", "Helena, MT", "Reno, NV", "Sparks, NV", "Concord, NH", "Manchester, NH", "Nashua, NH", "Siler City, NC", "Bend, OR", "Salem, OR", "Lancaster, PA", "Sioux Falls, SD", "Burleson, TX", "New Berlin, WI", "Waukesha, WI", "Cheyenne, WY", "Rock Springs, WY"], "cvap": [46137, 54548, 41944, 62725, 52892, 95949, 56750, 137017, 75215, 124998, 61879, 96298, 88731, 38839, 71466, 69380, 47693, 51493, 100006, 145652, 50029, 24166, 54622, 16274, 34937, 66272, 67054, 44608, 48023, 88478, 54861, 91921, 27095, 196971, 77305, 35727, 88188, 67275, 3970, 81080, 125179, 42632, 144054, 36264, 31319, 54926, 50968, 16365], "age_unknown": [23.21, 0.04, 0.05, 0.01, 0.36, 27.41, 19.78, 29.74, 29.3, 30.31, 25.58, 24.45, 30.91, 3.69, 0.03, 0.04, 0.1, 0.04, 0.03, 0.0, 0.02, 10.07, 26.39, 24.11, 0.0, 0.05, 0.23, 0.15, 17.62, 18.28, 17.75, 0.18, 0.23, 0.07, 0.09, 14.91, 17.47, 11.38, 14.21, 10.18, 14.66, 0.0, 17.86, 0.2, 9.07, 10.3, 30.3, 21.74]}, "African American South": {"x": [26.2, 42.9, 43.9, 36.6, 16.8, 16.6, 17.2, 25.2, 29.5, 36.1, 26.9, 4.7, 21.4, 22.2, 15.1, 17.1, 12.2, 52.0, 44.6, 35.0, 44.7, 56.7], "y": [0.27, 0.44, 0.61, 0.47, 0.07, 0.06, 0.08, 0.05, 0.05, 0.08, 0.05, 0.04, 0.08, 0.11, 0.07, 0.07, 0.06, 0.45, 0.42, 0.34, 0.52, 0.88], "city": ["Montgomery, AL", "Little Rock, AR", "North Little Rock, AR", "Pine Bluff, AR", "Albany, GA", "Augusta, GA", "Macon, GA", "Baton Rouge, LA", "Monroe, LA", "New Orleans, LA", "Shreveport, LA", "Hattiesburg, MS", "Jackson, MS", "Meridian, MS", "Goldsboro, NC", "Rocky Mount, NC", "Wilson, NC", "Sumter, SC", "Bartlett, TN", "Newport News, VA", "Norfolk, VA", "Richmond, VA"], "cvap": [144009, 143291, 49455, 30413, 49688, 152122, 115456, 166957, 34397, 287356, 134693, 38795, 110151, 25638, 25913, 41331, 35474, 31055, 42425, 135950, 178482, 177989], "age_unknown": [0.08, 0.14, 0.03, 0.03, 27.9, 26.54, 26.06, 90.78, 91.89, 87.49, 92.17, 15.9, 13.47, 19.54, 13.04, 12.39, 12.03, 0.0, 0.03, 0.14, 0.04, 0.04]}, "Middle Suburbs": {"x": [16.4, 18.6, 10.7, 23.1, 14.1, 13.8, 19.2, 47.0, 37.9, 18.7, 21.1, 9.9, 27.7, 18.8, 29.0, 13.2, 8.9, 68.2, 32.7, 24.0, 38.5, 27.9], "y": [0.1, 0.19, 0.17, 0.24, 0.17, 0.18, 0.41, 0.38, 0.2, 0.08, 0.11, 0.19, 0.42, 0.23, 0.34, 0.24, 0.34, 0.77, 0.29, 0.18, 0.19, 0.26], "city": ["Rockford, IL", "Anderson, IN", "Elkhart, IN", "Fort Wayne, IN", "Gary, IN", "Davenport, IA", "Marion, IA", "Covington, KY", "Flint, MI", "Sterling Heights, MI", "Warren, MI", "Pevely, MO", "Warren, OH", "Youngstown, OH", "Erie, PA", "Reading, PA", "York, PA", "Warwick, RI", "Green Bay, WI", "Kenosha, WI", "Oshkosh, WI", "Racine, WI"], "cvap": [102979, 42873, 34529, 191446, 47787, 77850, 30683, 31340, 60324, 99780, 102736, 4486, 30379, 44693, 70975, 55158, 32132, 66637, 75658, 71743, 54163, 53660], "age_unknown": [4.67, 0.04, 0.0, 0.02, 0.06, 0.04, 0.0, 19.77, 29.56, 14.32, 18.1, 0.45, 0.01, 0.0, 0.0, 0.14, 0.0, 0.01, 7.53, 8.68, 15.7, 10.18]}, "Hispanic Centers": {"x": [22.7, 55.0, 21.1, 24.5, 45.8, 25.6, 39.8, 47.8, 21.6, 20.9, 44.2, 37.5, 46.1, 62.6, 17.4, 57.1, 17.8, 17.6, 40.0], "y": [0.35, 0.87, 0.35, 0.32, 0.71, 0.51, 0.57, 0.76, 0.36, 0.45, 0.71, 0.47, 0.71, 0.75, 0.3, 0.69, 0.08, 0.07, 0.54], "city": ["Bakersfield, CA", "Chino, CA", "Fresno, CA", "Modesto, CA", "Moreno Valley, CA", "Ontario, CA", "Rancho Cucamonga, CA", "Rialto, CA", "Riverside, CA", "San Bernardino, CA", "Stockton, CA", "Turlock, CA", "Kissimmee, FL", "Saint Cloud, FL", "Kansas City, KS", "Vineland, NJ", "Las Cruces, NM", "Roswell, NM", "Odessa, TX"], "cvap": [251107, 61089, 349516, 143083, 133145, 111738, 123997, 63942, 214966, 133642, 198288, 48336, 47912, 44306, 94786, 41076, 82573, 33111, 71546], "age_unknown": [0.11, 0.07, 0.09, 0.03, 0.13, 0.09, 0.04, 0.09, 0.11, 0.1, 0.13, 0.11, 0.04, 0.06, 0.0, 0.12, 27.82, 33.42, 0.01]}, "Graying America": {"x": [38.9, 68.4, 54.7, 47.3, 35.1, 59.2, 7.4, 73.9, 73.1, 65.0, 21.3, 27.2, 39.8, 68.2, 62.6, 8.7, 10.9, 42.1], "y": [0.32, 0.72, 0.73, 0.46, 0.36, 0.62, 0.17, 0.98, 0.72, 0.22, 0.08, 0.23, 0.17, 0.79, 1.15, 0.14, 0.17, 0.09], "city": ["Mountain Home, AR", "Bonita Springs, FL", "Bradenton, FL", "Clermont, FL", "Fort Myers, FL", "Melbourne, FL", "Ocala, FL", "Ormond Beach, FL", "Palm Coast, FL", "Augusta, ME", "Waterville, ME", "Pittsfield, MA", "Brainerd, MN", "Carson City, NV", "Stone Harbor, NJ", "Enid, OK", "Pierre, SD", "Montpelier, VT"], "cvap": [10705, 44222, 41324, 34521, 65760, 67523, 48735, 35407, 77684, 15309, 14213, 34170, 11192, 43179, 805, 35394, 10703, 6341], "age_unknown": [0.05, 0.01, 0.01, 0.06, 0.09, 0.02, 0.0, 0.05, 0.04, 29.67, 20.47, 0.1, 21.73, 0.01, 0.0, 0.0, 14.9, 26.69]}, "Military Posts": {"x": [34.3, 14.2, 45.2, 29.5, 12.0, 19.5, 17.4, 39.8, 13.3, 9.0, 16.9, 20.7, 65.4, 69.8, 64.2, 26.7, 35.9], "y": [0.12, 0.06, 0.12, 0.13, 0.07, 0.11, 0.13, 0.42, 0.03, 0.13, 0.13, 0.3, 0.76, 0.76, 0.71, 0.21, 0.4], "city": ["Anchorage, AK", "Fairbanks, AK", "Sierra Vista, AZ", "Colorado Springs, CO", "Hinesville, GA", "Warner Robins, GA", "Belleville, IL", "Bellevue, NE", "Fayetteville, NC", "Lawton, OK", "Rapid City, SD", "Clarksville, TN", "Chesapeake, VA", "Suffolk, VA", "Virginia Beach, VA", "Bremerton, WA", "Olympia, WA"], "cvap": [211546, 23391, 33599, 365755, 24559, 57488, 31706, 46266, 154830, 67162, 59942, 123076, 186990, 73794, 343385, 35080, 44259], "age_unknown": [26.37, 34.68, 25.55, 25.99, 25.6, 27.72, 4.28, 0.84, 16.08, 0.07, 16.87, 0.15, 0.05, 0.07, 0.05, 4.44, 0.67]}, "Rural Middle America": {"x": [10.4, 22.7, 19.5, 32.5, 19.4, 15.3, 10.9, 22.5, 52.5, 52.6, 35.6, 16.6, 9.5, 9.2], "y": [0.08, 0.1, 0.19, 0.32, 0.27, 0.32, 0.21, 0.15, 0.6, 0.25, 0.06, 0.19, 0.2, 0.07], "city": ["Decatur, IL", "Quincy, IL", "Columbus, IN", "Dubuque, IA", "Marshalltown, IA", "Ottumwa, IA", "Sioux City, IA", "Waverly, IA", "Douglass, KS", "Owensboro, KY", "Traverse City, MI", "Jefferson City, MO", "Lima, OH", "Watertown, SD"], "cvap": [54164, 30428, 33973, 45953, 17120, 17157, 57963, 8238, 1232, 44364, 12948, 33244, 26432, 17879], "age_unknown": [2.07, 3.3, 0.02, 0.01, 0.0, 0.0, 0.03, 0.0, 0.0, 15.6, 18.66, 0.63, 0.0, 14.19]}, "LDS Enclaves": {"x": [23.0, 18.9, 18.0, 25.6, 18.3, 24.9, 26.5, 36.4, 21.3, 16.9], "y": [0.14, 0.11, 0.16, 0.09, 0.07, 0.07, 0.16, 0.12, 0.12, 0.09], "city": ["Draper, UT", "Lehi, UT", "Ogden, UT", "Orem, UT", "Provo, UT", "St George, UT", "Salt Lake City, UT", "Sandy, UT", "South Jordan, UT", "Taylorsville, UT"], "cvap": [33282, 52708, 61999, 64683, 84289, 72378, 156159, 65400, 55693, 38607], "age_unknown": [12.61, 14.46, 12.36, 15.37, 21.7, 11.79, 14.91, 11.46, 10.9, 9.62]}, "Native American Lands": {"x": [10.4, 14.4, 10.3], "y": [0.14, 0.1, 0.07], "city": ["Window Rock, AZ", "Farmington, NM", "Gallup, NM"], "cvap": [1826, 33348, 14064], "age_unknown": [63.49, 30.29, 40.12]}, "Working Class Country": {"x": [36.1, 33.0, 39.7], "y": [0.32, 0.31, 0.41], "city": ["Hot Springs, AR", "Monticello, AR", "Charleston, WV"], "cvap": [30015, 6502, 37633], "age_unknown": [0.06, 0.05, 0.08]}, "Aging Farmlands": {"x": [64.0, 45.9, 42.4], "y": [0.23, 0.19, 0.18], "city": ["Burlington, CO", "Redwood Falls, MN", "Harvey, ND"], "cvap": [2105, 3912, 1297], "age_unknown": [36.53, 16.04, 18.0]}, "Evangelical Hubs": {"x": [37.9, 5.6, 39.8], "y": [0.28, 0.08, 0.4], "city": ["London, KY", "Fulton, MS", "Henderson, TN"], "cvap": [5768, 3870, 4866], "age_unknown": [11.13, 11.47, 0.05]}};
+const categories = ["College Towns", "Big Cities", "Urban Burbs", "Exurbs", "African American South", "Middle Suburbs", "Hispanic Centers", "Graying America", "Military Posts", "Rural Middle America", "LDS Enclaves", "Native American Lands", "Working Class Country", "Aging Farmlands", "Evangelical Hubs"];
+const traces = [];
+
+// Fixed, distinct color per category -- no duplicates, no invisible colors.
+// Categories with fewer than SMALL_N_THRESHOLD cities are pooled into a
+// single "Other small-sample types" bucket so a 3-city category never
+// borrows a color from (or gets mistaken in weight for) a 100+ city one.
+const palette = {
+  "College Towns": "#ef5ba1",
+  "Big Cities": "#00538A",
+  "Urban Burbs": "#FF6800",
+  "Exurbs": "#007D34",
+  "African American South": "#53377A",
+  "Middle Suburbs": "#E8A400",
+  "Hispanic Centers": "#0F9B8E",
+  "Graying America": "#A6458E",
+  "Military Posts": "#C10020",
+  "Rural Middle America": "#7F180D",
+  "LDS Enclaves": "#8A6D3B"
+};
+const SMALL_N_THRESHOLD = 4;
+const AGE_UNKNOWN_FLAG = 50; // percent unknown; >50% means age-match rate is below 50%
+
+const bigCats = categories.filter(c => grouped[c].x.length >= SMALL_N_THRESHOLD);
+const smallCats = categories.filter(c => grouped[c].x.length < SMALL_N_THRESHOLD);
+
+function sizeFor(cvap) {
+  const raw = 4.5 + 1.65 * Math.log10(cvap);
+  return Math.max(7, Math.min(15, raw));
+}
+
+function flagNote(ageUnknown) {
+  return ageUnknown > AGE_UNKNOWN_FLAG
+    ? "<br><b>Reliability flag:</b> age-match rate below 50%"
+    : "";
+}
+
+bigCats.forEach((cat) => {
+  const g = grouped[cat];
+  const isCollege = cat === "College Towns";
+  const n = g.x.length;
+
+  const sizes = g.cvap.map(c => sizeFor(c));
+  const opacities = g.age_unknown.map(() => isCollege ? 0.90 : 0.76);
+  const customdata = g.x.map((_, j) => [g.cvap[j], g.age_unknown[j], flagNote(g.age_unknown[j])]);
+
+  traces.push({
+    type: "scatter",
+    mode: "markers",
+    name: `${cat} (n=${n})`,
+    x: g.x,
+    y: g.y,
+    text: g.city,
+    customdata: customdata,
+    marker: {
+      size: sizes,
+      color: palette[cat],
+      opacity: opacities,
+      line: {
+        color: isCollege ? "#071a3d" : "rgba(7,26,61,.65)",
+        width: isCollege ? 2.2 : 0.9
+      }
+    },
+    hovertemplate:
+      "<b>%{text}</b><br>" +
+      cat + "<br>" +
+      "Overall turnout: %{x:.1f}%<br>" +
+      "Youth Representation Ratio: %{y:.2f}<br>" +
+      "CVAP: %{customdata[0]:,.0f}<br>" +
+      "Age unknown: %{customdata[1]:.1f}%" +
+      "%{customdata[2]}" +
+      "<extra></extra>"
+  });
+});
+
+if (smallCats.length) {
+  const other = { x: [], y: [], city: [], cvap: [], age_unknown: [], cat: [] };
+  smallCats.forEach(cat => {
+    const g = grouped[cat];
+    g.x.forEach((_, j) => {
+      other.x.push(g.x[j]);
+      other.y.push(g.y[j]);
+      other.city.push(g.city[j]);
+      other.cvap.push(g.cvap[j]);
+      other.age_unknown.push(g.age_unknown[j]);
+      other.cat.push(cat);
+    });
+  });
+  const customdata = other.x.map((_, j) => [other.cvap[j], other.age_unknown[j], other.cat[j], flagNote(other.age_unknown[j])]);
+  traces.push({
+    type: "scatter",
+    mode: "markers",
+    name: `Other small-sample types (n=${other.x.length})`,
+    x: other.x,
+    y: other.y,
+    text: other.city,
+    customdata: customdata,
+    marker: {
+      symbol: "diamond",
+      size: other.cvap.map(c => sizeFor(c)),
+      color: "#5c5f66",
+      opacity: 0.75,
+      line: { color: "rgba(7,26,61,.65)", width: 0.9 }
+    },
+    hovertemplate:
+      "<b>%{text}</b><br>" +
+      "%{customdata[2]} (n≤3, pooled)<br>" +
+      "Overall turnout: %{x:.1f}%<br>" +
+      "Youth Representation Ratio: %{y:.2f}<br>" +
+      "CVAP: %{customdata[0]:,.0f}<br>" +
+      "Age unknown: %{customdata[1]:.1f}%" +
+      "%{customdata[3]}" +
+      "<extra></extra>"
+  });
+}
+
+
+const flagged = { x:[], y:[], city:[], cat:[], age_unknown:[] };
+categories.forEach(cat => {
+  const g = grouped[cat];
+  g.x.forEach((_, j) => {
+    if (g.age_unknown[j] > AGE_UNKNOWN_FLAG) {
+      flagged.x.push(g.x[j]);
+      flagged.y.push(g.y[j]);
+      flagged.city.push(g.city[j]);
+      flagged.cat.push(cat);
+      flagged.age_unknown.push(g.age_unknown[j]);
+    }
+  });
+});
+
+if (flagged.x.length) {
+  traces.push({
+    type:"scatter",
+    mode:"markers",
+    name:`Low age-match (<50%) (n=${flagged.x.length})`,
+    x:flagged.x,
+    y:flagged.y,
+    text:flagged.city,
+    customdata:flagged.x.map((_,j)=>[flagged.cat[j], 100-flagged.age_unknown[j]]),
+    marker:{
+      symbol:"circle-open",
+      size:19,
+      color:"#071a3d",
+      line:{color:"#071a3d",width:2.2}
+    },
+    hovertemplate:
+      "<b>%{text}</b><br>" +
+      "%{customdata[0]}<br>" +
+      "Age-match rate: %{customdata[1]:.1f}%<br>" +
+      "<b>Reliability flag</b><extra></extra>"
+  });
+}
+
+traces.push({
+  type:"scatter",
+  mode:"lines",
+  name:"Non-College Town trend",
+  x:[1.4, 2.038, 2.676, 3.313, 3.951, 4.589, 5.227, 5.865, 6.503, 7.14, 7.778, 8.416, 9.054, 9.692, 10.329, 10.967, 11.605, 12.243, 12.881, 13.518, 14.156, 14.794, 15.432, 16.07, 16.708, 17.345, 17.983, 18.621, 19.259, 19.897, 20.534, 21.172, 21.81, 22.448, 23.086, 23.724, 24.361, 24.999, 25.637, 26.275, 26.913, 27.55, 28.188, 28.826, 29.464, 30.102, 30.739, 31.377, 32.015, 32.653, 33.291, 33.929, 34.566, 35.204, 35.842, 36.48, 37.118, 37.755, 38.393, 39.031, 39.669, 40.307, 40.945, 41.582, 42.22, 42.858, 43.496, 44.134, 44.771, 45.409, 46.047, 46.685, 47.323, 47.961, 48.598, 49.236, 49.874, 50.512, 51.15, 51.787, 52.425, 53.063, 53.701, 54.339, 54.976, 55.614, 56.252, 56.89, 57.528, 58.166, 58.803, 59.441, 60.079, 60.717, 61.355, 61.992, 62.63, 63.268, 63.906, 64.544, 65.182, 65.819, 66.457, 67.095, 67.733, 68.371, 69.008, 69.646, 70.284, 70.922, 71.56, 72.197, 72.835, 73.473, 74.111, 74.749, 75.387, 76.024, 76.662, 77.3],
+  y:[0.0638, 0.0696, 0.0754, 0.0812, 0.087, 0.0928, 0.0986, 0.1044, 0.1102, 0.1161, 0.1219, 0.1277, 0.1335, 0.1393, 0.1451, 0.1509, 0.1567, 0.1625, 0.1683, 0.1741, 0.1799, 0.1857, 0.1915, 0.1973, 0.2031, 0.2089, 0.2147, 0.2205, 0.2263, 0.2321, 0.2379, 0.2437, 0.2495, 0.2553, 0.2611, 0.2669, 0.2727, 0.2785, 0.2843, 0.2901, 0.2959, 0.3017, 0.3076, 0.3134, 0.3192, 0.325, 0.3308, 0.3366, 0.3424, 0.3482, 0.354, 0.3598, 0.3656, 0.3714, 0.3772, 0.383, 0.3888, 0.3946, 0.4004, 0.4062, 0.412, 0.4178, 0.4236, 0.4294, 0.4352, 0.441, 0.4468, 0.4526, 0.4584, 0.4642, 0.47, 0.4758, 0.4816, 0.4874, 0.4932, 0.499, 0.5049, 0.5107, 0.5165, 0.5223, 0.5281, 0.5339, 0.5397, 0.5455, 0.5513, 0.5571, 0.5629, 0.5687, 0.5745, 0.5803, 0.5861, 0.5919, 0.5977, 0.6035, 0.6093, 0.6151, 0.6209, 0.6267, 0.6325, 0.6383, 0.6441, 0.6499, 0.6557, 0.6615, 0.6673, 0.6731, 0.6789, 0.6847, 0.6905, 0.6963, 0.7022, 0.708, 0.7138, 0.7196, 0.7254, 0.7312, 0.737, 0.7428, 0.7486, 0.7544],
+  line:{color:"#071a3d", width:2.5, dash:"dash"},
+  hoverinfo:"skip",
+  showlegend:true
+});
+
+const layout = {
+  margin: {l:72, r:250, t:18, b:72},
+  paper_bgcolor:"#f8f3e9",
+  plot_bgcolor:"#f8f3e9",
+  hovermode:"closest",
+  xaxis:{
+    title:{text:"Overall mayoral turnout", standoff:16},
+    ticksuffix:"%",
+    range:[0, 82],
+    gridcolor:"rgba(7,26,61,.13)",
+    zeroline:false,
+    tickfont:{color:"#071a3d", family:"Open Sans"},
+    titlefont:{color:"#071a3d", family:"Open Sans"}
+  },
+  yaxis:{
+    title:{text:"Youth Representation Ratio (YRR)", standoff:16},
+    range:[0, 1.22],
+    gridcolor:"rgba(7,26,61,.13)",
+    zeroline:false,
+    tickfont:{color:"#071a3d", family:"Open Sans"},
+    titlefont:{color:"#071a3d", family:"Open Sans"}
+  },
+  legend:{
+    title:{text:"Community type"},
+    x:1.02,
+    xanchor:"left",
+    y:1,
+    yanchor:"top",
+    bgcolor:"rgba(248,243,233,.94)",
+    font:{size:10, family:"Open Sans", color:"#071a3d"}
+  },
+  font:{
+    family:'Open Sans, sans-serif',
+    color:"#071a3d"
+  },
+  shapes:[
+    {
+      // Soft glow behind the parity line so it reads as a highlighted
+      // reference line rather than an ordinary gridline -- no full-area fill.
+      type:"line",
+      xref:"paper", x0:0, x1:1,
+      yref:"y", y0:1, y1:1,
+      line:{color:"rgba(7,26,61,.10)", width:7},
+      layer:"below"
+    },
+    {
+      type:"line",
+      xref:"paper", x0:0, x1:1,
+      yref:"y", y0:1, y1:1,
+      line:{color:"#071a3d", width:2.2, dash:"dot"},
+      layer:"below"
+    }
+  ],
+  annotations:[
+    {
+      x:0.015, y:1.0, xref:"paper", yref:"y",
+      text:"<b>PARITY · YRR 1.0</b>",
+      showarrow:false,
+      xanchor:"left",
+      yanchor:"bottom",
+      yshift:4,
+      font:{size:11, color:"#071a3d", family:"Open Sans"},
+      bgcolor:"#ffd31f",
+      borderpad:4
+    },
+    {
+      x:0.985, y:0.035, xref:"paper", yref:"paper",
+      text:"Higher YRR = stronger youth representation",
+      showarrow:false,
+      xanchor:"right",
+      align:"right",
+      font:{size:10, color:"rgba(7,26,61,.72)", family:"Open Sans"},
+      bgcolor:"rgba(248,243,233,.86)"
+    },
+    {
+      x:62.6, y:1.15, xref:"x", yref:"y",
+      text:"Stone Harbor, NJ",
+      showarrow:false,
+      xanchor:"center",
+      yanchor:"bottom",
+      yshift:6,
+      font:{size:10, color:"#071a3d", family:"Open Sans"}
+    },
+    {
+      x:77.3, y:1.13, xref:"x", yref:"y",
+      text:"Pleasanton, CA",
+      showarrow:false,
+      xanchor:"right",
+      yanchor:"middle",
+      xshift:-8,
+      font:{size:10, color:"#071a3d", family:"Open Sans"}
+    },
+    {
+      x:69.6, y:1.04, xref:"x", yref:"y",
+      text:"San Ramon, CA",
+      showarrow:false,
+      xanchor:"center",
+      yanchor:"top",
+      yshift:-8,
+      font:{size:10, color:"#071a3d", family:"Open Sans"}
+    },
+    {
+      x:50, y:0.5, xref:"x", yref:"y",
+      text:"most elastic part of<br>the electorate",
+      showarrow:false,
+      xanchor:"left",
+      yanchor:"middle",
+      xshift:10,
+      font:{size:10, color:"rgba(7,26,61,.72)", family:"Open Sans", style:"italic"},
+      bgcolor:"rgba(248,243,233,.82)"
+    }
+  ]
+};
+
+const config = {
+  responsive:true,
+  displaylogo:false,
+  modeBarButtonsToRemove:["lasso2d","select2d"]
+};
+
+Plotly.newPlot("chart", traces, layout, config);
+
+function responsiveLegend() {
+  const mobile = window.innerWidth < 760;
+  Plotly.relayout("chart", mobile ? {
+    "legend.orientation":"h",
+    "legend.x":0,
+    "legend.xanchor":"left",
+    "legend.y":-0.22,
+    "legend.yanchor":"top",
+    "margin.r":20,
+    "margin.b":210
+  } : {
+    "legend.orientation":"v",
+    "legend.x":1.02,
+    "legend.xanchor":"left",
+    "legend.y":1,
+    "legend.yanchor":"top",
+    "margin.r":260,
+    "margin.b":72
+  });
+}
+responsiveLegend();
+window.addEventListener("resize", responsiveLegend);
+</script>
+</body>
+</html>
